@@ -177,7 +177,7 @@ export const Timeline = () => {
   );
 
   const handleRulerUpdateTime = useCallback<
-    NonNullable<RulerProps['onBarClick']>
+    NonNullable<RulerProps['onBarDrag']>
   >(
     (_, time) => {
       if (time === undefined) return;
@@ -224,7 +224,7 @@ export const Timeline = () => {
       <Ruler
         containerRef={rulerContainerRef}
         width={segmentWidth}
-        onBarClick={handleRulerUpdateTime}
+        onBarDrag={handleRulerUpdateTime}
       />
       <TrackList containerRef={trackListContainerRef} />
       <KeyframeList
