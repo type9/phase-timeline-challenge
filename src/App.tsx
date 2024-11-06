@@ -10,7 +10,7 @@ export default function App() {
           Please follow the instructions in the README.md.
         </p>
       </div>
-      <TimelineProvider initialState={{ minTime: 0, maxTime: 2000 }}>
+      <TimelineProvider initialState={{ minTime: 0, maxTime: 6000 }}>
         <Timeline />
       </TimelineProvider>
     </div>

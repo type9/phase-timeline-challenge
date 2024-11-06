@@ -7,6 +7,8 @@ export type TimelineState = {
   maxTime: number;
   durationTime: number;
   stateDep: number;
+  horizontalOffset: number;
+  verticalOffset: number;
 };
 
 export type TimelineContextType = {

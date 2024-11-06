@@ -10,7 +10,9 @@ export type TimelineAction =
   | {
       type: 'SET_PLAYHEAD_TIME';
       payload: number;
-    };
+    }
+  | { type: 'SET_VERTICAL_OFFSET'; payload: number }
+  | { type: 'SET_HORIZONTAL_OFFSET'; payload: number };
 
 export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
   state,
@@ -53,5 +55,18 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
     };
   }
 
+  if (action.type === 'SET_HORIZONTAL_OFFSET') {
+    return {
+      ...state,
+      horizontalOffset: action.payload,
+    };
+  }
+
+  if (action.type === 'SET_VERTICAL_OFFSET') {
+    return {
+      ...state,
+      verticalOffset: action.payload,
+    };
+  }
   throw new Error(`Invalid action format ${action}`);
 };

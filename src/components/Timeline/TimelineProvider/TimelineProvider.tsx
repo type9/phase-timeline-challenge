@@ -12,6 +12,8 @@ export const TIMELINE_DEFAULT_STATE: TimelineState = {
   maxTime: 0,
   durationTime: 2000,
   stateDep: 0,
+  horizontalOffset: 0,
+  verticalOffset: 0,
 };
 
 export const TimelineProvider = ({

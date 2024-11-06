@@ -1,14 +1,39 @@
-export const Ruler = () => {
-  // TODO: implement mousedown and mousemove to update time and Playhead position
+import { useRef, useCallback } from 'react';
+import { getRelativePositionLeftMouseEvent } from './utils/position';
+
+export type RulerProps = {
+  width: string;
+  containerRef: React.RefObject<HTMLDivElement>;
+  onBarClick?: (
+    e: React.MouseEvent<HTMLDivElement>,
+    relativePositionLeft?: number
+  ) => void;
+};
+
+export const Ruler = ({ width, onBarClick, containerRef }: RulerProps) => {
+  const localBarRef = useRef<HTMLDivElement>(null);
+
+  const handleBarClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (localBarRef.current === null) return;
+      onBarClick?.(e, getRelativePositionLeftMouseEvent(e, localBarRef));
+    },
+    [onBarClick]
+  );
 
   return (
     <div
-      className="px-4 py-2 min-w-0 
-      border-b border-solid border-gray-700 
-      overflow-x-auto overflow-y-hidden"
+      className="min-w-0 px-4 py-2 overflow-x-auto overflow-y-hidden border-b border-gray-700 border-solid"
       data-testid="ruler"
+      ref={containerRef}
     >
-      <div className="w-[2000px] h-6 rounded-md bg-white/25" data-testid="ruler-bar"></div>
+      <div
+        ref={localBarRef}
+        className={`h-6 rounded-md bg-white/25`}
+        onClick={handleBarClick}
+        data-testid="ruler-bar"
+        style={{ width }}
+      ></div>
     </div>
   );
 };

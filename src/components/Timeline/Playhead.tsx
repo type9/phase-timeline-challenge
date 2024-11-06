@@ -1,13 +1,23 @@
-type PlayheadProps = {
-  time: number;
+export type PlayheadProps = {
+  playheadRef: React.RefObject<HTMLDivElement>;
+  positionX: number;
+  visible?: boolean;
 };
 
-export const Playhead = ({ time }: PlayheadProps) => {
+export const Playhead = ({
+  playheadRef,
+  positionX,
+  visible = true,
+}: PlayheadProps) => {
   return (
     <div
-      className="absolute left-[316px] h-full border-l-2 border-solid border-yellow-600 z-10"
+      className="absolute z-10 h-full border-l-2 border-yellow-600 border-solid"
       data-testid="playhead"
-      style={{ transform: `translateX(calc(${time}px - 50%))` }}
+      style={{
+        transform: `translateX(calc(${positionX}px))`,
+      }}
+      hidden={!visible}
+      ref={playheadRef}
     >
       <div className="absolute border-solid border-[5px] border-transparent border-t-yellow-600 -translate-x-1.5" />
     </div>
