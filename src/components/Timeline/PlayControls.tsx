@@ -122,6 +122,7 @@ export const PlayControls = ({
             if (currentKeyDownRef.current === 'Escape') setTime(playheadTime);
 
             onCurrentTimeBlur?.(e, currentKeyDownRef.current);
+            handleInputKeyUp(); //reset key detection
           }}
           step={increment}
         />
@@ -154,6 +155,7 @@ export const PlayControls = ({
               setDuration(durationTime);
 
             onDurationTimeBlur?.(e, currentKeyDownRef.current);
+            handleInputKeyUp(); //reset key detection
           }}
         />
         Duration
