@@ -225,6 +225,7 @@ export const Timeline = () => {
         containerRef={rulerContainerRef}
         width={segmentWidth}
         onBarDrag={handleRulerUpdateTime}
+        onBarClick={handleRulerUpdateTime}
       />
       <TrackList containerRef={trackListContainerRef} />
       <KeyframeList

@@ -4,21 +4,33 @@ import { getRelativePositionLeftMouseEvent } from './utils/position';
 export type RulerProps = {
   width: string;
   containerRef: React.RefObject<HTMLDivElement>;
+  onBarClick?: (
+    e: React.MouseEvent<HTMLDivElement>,
+    relativePositionLeft?: number
+  ) => void;
   onBarDrag?: (
     e: MouseEvent | React.MouseEvent<HTMLDivElement>,
     relativePositionLeft?: number
   ) => void;
 };
 
-export const Ruler = ({ width, onBarDrag, containerRef }: RulerProps) => {
+export const Ruler = ({
+  width,
+  onBarDrag,
+  onBarClick,
+  containerRef,
+}: RulerProps) => {
   const localBarRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
   // initiates drag
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    isDraggingRef.current = true;
-    e.preventDefault();
-  }, []);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      isDraggingRef.current = true;
+      e.preventDefault();
+    },
+    [onBarClick]
+  );
 
   // ends drag
   const handleMouseUp = useCallback(() => {
@@ -55,6 +67,9 @@ export const Ruler = ({ width, onBarDrag, containerRef }: RulerProps) => {
         ref={localBarRef}
         className="h-6 rounded-md bg-white/25"
         onMouseDown={handleMouseDown}
+        onClick={e =>
+          onBarClick?.(e, getRelativePositionLeftMouseEvent(e, localBarRef))
+        }
         data-testid="ruler-bar"
         style={{ width, cursor: 'pointer' }}
       ></div>
