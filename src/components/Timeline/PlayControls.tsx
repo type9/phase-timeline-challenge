@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { DEFAULT_TIMELINE_CONFIG } from './constants';
+import { setInputValue } from './utils/inputs';
 
 export type PlayControlsProps = {
   playheadTime: number;
@@ -9,10 +10,6 @@ export type PlayControlsProps = {
     e: React.ChangeEvent<HTMLInputElement>,
     currentKeyDown?: React.KeyboardEvent['key']
   ) => void;
-  onCurrentTimeKeyDown?: (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    currentTime: number
-  ) => void;
   onCurrentTimeBlur?: (
     e: React.FocusEvent<HTMLInputElement>,
     currentKeyDown?: React.KeyboardEvent['key']
@@ -21,10 +18,6 @@ export type PlayControlsProps = {
     e: React.ChangeEvent<HTMLInputElement>,
     currentKeyDown?: React.KeyboardEvent['key']
   ) => void;
-  onDurationTimeKeyDown?: (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    currentTime: number
-  ) => void;
   onDurationTimeBlur?: (
     e: React.FocusEvent<HTMLInputElement>,
     currentKeyDown?: React.KeyboardEvent['key']
@@ -32,31 +25,32 @@ export type PlayControlsProps = {
   increment: number;
 };
 
+/*
+ * PlayControls is a mostly dumb component that links state logic to input elements, and handles local behaviour such as selecting on click logic.
+ * TO OPTIMIZE: Input elements can be extracted into their own component and the handles can be forwaded by PlayControls.
+ *              This would prevent the container and other input elements from having to rerender on state change. Because this is shallow currently, is most likely not important.
+ */
 export const PlayControls = ({
   playheadTime,
   durationTime,
   onCurrentTimeInputChange,
-  onCurrentTimeKeyDown,
   onCurrentTimeBlur,
   onDurationTimeInputChange,
-  onDurationTimeKeyDown,
   onDurationTimeBlur,
   increment,
   stateDep,
 }: PlayControlsProps) => {
   const currentTimeInputRef = React.useRef<HTMLInputElement>(null);
   const durationTimeInputRef = React.useRef<HTMLInputElement>(null);
-  const [time, setTime] = useState<number>(playheadTime);
-  const [duration, setDuration] = useState<number>(durationTime);
   const currentKeyDownRef = React.useRef<React.KeyboardEvent['key']>();
 
   //syncs internal state with global state
   useEffect(() => {
-    setTime(playheadTime);
-  }, [playheadTime, stateDep]);
-  useEffect(() => {
-    setDuration(durationTime);
-  }, [durationTime, stateDep]);
+    if (currentTimeInputRef.current)
+      currentTimeInputRef.current.value = playheadTime.toString();
+    if (durationTimeInputRef.current)
+      durationTimeInputRef.current.value = durationTime.toString();
+  }, [stateDep]);
 
   const handleInputKeyDown = useCallback(
     (
@@ -64,9 +58,9 @@ export const PlayControls = ({
       inputRef: React.RefObject<HTMLInputElement>
     ) => {
       currentKeyDownRef.current = e.key;
-      if (e.key === 'Enter' || e.key === 'Escape') inputRef.current?.blur();
+      if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget?.blur();
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown')
-        // if an arrow key is used, select the input
+        // if no key was used to make the change, select the input via target, i.e. the input element
         setTimeout(() => {
           //delays selection till after value mutates
           inputRef.current?.select();
@@ -75,18 +69,30 @@ export const PlayControls = ({
     []
   );
 
-  const handleInputKeyUp = useCallback(() => {
-    currentKeyDownRef.current = undefined;
-  }, []);
+  const handleInputKeyUp = useCallback(
+    () => (currentKeyDownRef.current = undefined),
+    []
+  );
 
-  const selectOnChange = useCallback(
-    (inputRef: React.RefObject<HTMLInputElement>) => {
-      if (!currentKeyDownRef.current)
-        // if no key was used to make the change, select the input
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (currentKeyDownRef.current === undefined)
+        // if no key was used to make the change, select the input via target, i.e. the input element
         setTimeout(() => {
           //delays selection till after value mutates
-          inputRef.current?.select();
+          e.target?.select();
         }, 0);
+    },
+    []
+  );
+
+  const handleInputBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>, valueIfEscaped: string) => {
+      //resets input value to state value if Escape is pressed to blur
+      if (currentKeyDownRef.current === 'Escape')
+        setInputValue(e.currentTarget, valueIfEscaped);
+      //importantly resets key detection
+      handleInputKeyUp();
     },
     []
   );
@@ -103,26 +109,18 @@ export const PlayControls = ({
           className="px-1 bg-gray-700 rounded"
           type="number"
           data-testid="current-time-input"
-          min={0}
+          min={DEFAULT_TIMELINE_CONFIG.minDuration}
           max={durationTime}
-          onKeyDown={e => {
-            onCurrentTimeKeyDown?.(e, time);
-            handleInputKeyDown(e, currentTimeInputRef);
-          }}
+          onKeyDown={e => handleInputKeyDown(e, currentTimeInputRef)}
           onKeyUp={handleInputKeyUp}
-          value={time.toString()}
           onChange={e => {
             onCurrentTimeInputChange?.(e, currentKeyDownRef.current);
-            setTime(Number(e.target.value));
-            selectOnChange(currentTimeInputRef);
+            handleInputChange(e);
           }}
-          onFocus={() => currentTimeInputRef.current?.select()}
+          onFocus={e => e.currentTarget?.select()}
           onBlur={e => {
-            //resets internal state to playhead time if Escape is pressed
-            if (currentKeyDownRef.current === 'Escape') setTime(playheadTime);
-
+            handleInputBlur(e, playheadTime.toString());
             onCurrentTimeBlur?.(e, currentKeyDownRef.current);
-            handleInputKeyUp(); //reset key detection
           }}
           step={increment}
         />
@@ -134,28 +132,19 @@ export const PlayControls = ({
           className="px-1 bg-gray-700 rounded"
           type="number"
           data-testid="duration-input"
-          value={duration.toString()}
           min={DEFAULT_TIMELINE_CONFIG.minDuration}
           max={DEFAULT_TIMELINE_CONFIG.maxDuration}
           step={increment}
-          onKeyDown={e => {
-            onDurationTimeKeyDown?.(e, duration);
-            handleInputKeyDown(e, durationTimeInputRef);
-          }}
+          onKeyDown={e => handleInputKeyDown(e, durationTimeInputRef)}
           onKeyUp={handleInputKeyUp}
           onChange={e => {
             onDurationTimeInputChange?.(e, currentKeyDownRef.current);
-            setDuration(Number(e.target.value));
-            selectOnChange(durationTimeInputRef);
+            handleInputChange(e);
           }}
-          onFocus={() => durationTimeInputRef.current?.select()}
+          onFocus={e => e.currentTarget?.select()}
           onBlur={e => {
-            //resets internal state to playhead time if Escape is pressed
-            if (currentKeyDownRef.current === 'Escape')
-              setDuration(durationTime);
-
+            handleInputBlur(e, durationTime.toString());
             onDurationTimeBlur?.(e, currentKeyDownRef.current);
-            handleInputKeyUp(); //reset key detection
           }}
         />
         Duration
