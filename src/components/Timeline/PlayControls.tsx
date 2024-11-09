@@ -109,7 +109,7 @@ export const PlayControls = ({
           className="px-1 bg-gray-700 rounded"
           type="number"
           data-testid="current-time-input"
-          min={DEFAULT_TIMELINE_CONFIG.minDuration}
+          min={0}
           max={durationTime}
           onKeyDown={e => handleInputKeyDown(e, currentTimeInputRef)}
           onKeyUp={handleInputKeyUp}

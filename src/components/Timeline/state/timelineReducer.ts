@@ -17,14 +17,19 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
   action
 ): TimelineState => {
   if (action.type === 'SET_PLAYHEAD_TIME') {
-    if (action.payload === state.playheadTime) return state;
-
     const newPlayheadTime = getNewPlayheadTime({
       playheadTime: action.payload,
       minTime: state.minTime,
       maxTime: state.maxTime,
       durationTime: state.durationTime,
     });
+
+    console.log(action.payload, newPlayheadTime, state.playheadTime);
+    if (
+      newPlayheadTime === action.payload &&
+      newPlayheadTime === state.playheadTime
+    )
+      return state;
 
     return {
       ...state,
@@ -34,8 +39,6 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
   }
 
   if (action.type === 'SET_DURATION_TIME') {
-    if (action.payload === state.durationTime) return state;
-
     const newDurationTime = getNewDurationTime({
       durationTime: action.payload,
       minTime: DEFAULT_TIMELINE_CONFIG.minDuration,
@@ -50,7 +53,7 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
     });
 
     if (
-      newPlayheadTime === state.playheadTime &&
+      newDurationTime === action.payload &&
       newDurationTime === state.durationTime
     )
       return state;
