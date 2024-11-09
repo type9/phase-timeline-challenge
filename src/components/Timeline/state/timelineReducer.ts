@@ -24,7 +24,6 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
       durationTime: state.durationTime,
     });
 
-    console.log(action.payload, newPlayheadTime, state.playheadTime);
     if (
       newPlayheadTime === action.payload &&
       newPlayheadTime === state.playheadTime
