@@ -14,19 +14,67 @@ export const getRelativePositionLeftMouseEvent = (
 
 export const calculatePlayheadPosition = ({
   currentTime,
-  leftOffset,
-  leftPadding,
+  rulerLeft,
+  containerScrollLeft,
+  minTime,
+  maxTime,
   timeToPixelRatio = 1,
 }: {
   currentTime: number;
-  leftOffset: number;
-  leftPadding: number;
+  rulerLeft: number;
+  containerScrollLeft: number;
+  minTime: number;
+  maxTime: number;
   timeToPixelRatio?: number;
 }) => {
-  const playheadPositionInPixels = currentTime * timeToPixelRatio;
+  const clampedTime = Math.max(minTime, Math.min(currentTime, maxTime));
+  const playheadPositionInUnits = clampedTime * timeToPixelRatio;
+  const adjustedPosition =
+    playheadPositionInUnits + rulerLeft - containerScrollLeft;
 
-  const positionWithPadding = playheadPositionInPixels + leftPadding;
-  const offsetAdjustedPosition = positionWithPadding - leftOffset;
+  return adjustedPosition;
+};
 
-  return offsetAdjustedPosition;
+export const getPlayheadAttributes = ({
+  currentTime,
+  minTime = 0,
+  maxTime,
+  rulerRef,
+  rulerContainerRef,
+}: {
+  currentTime: number;
+  maxTime: number;
+  minTime?: number;
+  rulerRef: React.RefObject<HTMLDivElement>;
+  rulerContainerRef: React.RefObject<HTMLDivElement>;
+}): { hidden: boolean; left: string } | undefined => {
+  const rulerLeft = rulerRef?.current?.offsetLeft;
+  const containerLeft = rulerContainerRef?.current?.offsetLeft;
+  const containerRight =
+    rulerContainerRef?.current?.getBoundingClientRect().right;
+  const containerScrollLeft = rulerContainerRef?.current?.scrollLeft;
+
+  if (
+    rulerLeft === undefined ||
+    containerLeft === undefined ||
+    containerScrollLeft === undefined ||
+    containerRight === undefined
+  )
+    return;
+
+  const calculatedPosition = calculatePlayheadPosition({
+    currentTime,
+    rulerLeft,
+    containerScrollLeft,
+    minTime,
+    maxTime,
+  });
+
+  return {
+    hidden: !(
+      calculatedPosition >= containerLeft &&
+      calculatedPosition <= containerRight
+    ),
+    left: `${calculatedPosition}px`,
+  };
 };

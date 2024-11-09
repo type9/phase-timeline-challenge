@@ -10,15 +10,15 @@ export type TimelineAction =
   | {
       type: 'SET_PLAYHEAD_TIME';
       payload: number;
-    }
-  | { type: 'SET_VERTICAL_OFFSET'; payload: number }
-  | { type: 'SET_HORIZONTAL_OFFSET'; payload: number };
+    };
 
 export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
   state,
   action
-) => {
+): TimelineState => {
   if (action.type === 'SET_PLAYHEAD_TIME') {
+    if (action.payload === state.playheadTime) return state;
+
     const newPlayheadTime = getNewPlayheadTime({
       playheadTime: action.payload,
       minTime: state.minTime,
@@ -29,11 +29,13 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
     return {
       ...state,
       playheadTime: newPlayheadTime,
-      stateDep: getNewStateDep(),
+      timeStateDep: getNewStateDep(),
     };
   }
 
   if (action.type === 'SET_DURATION_TIME') {
+    if (action.payload === state.durationTime) return state;
+
     const newDurationTime = getNewDurationTime({
       durationTime: action.payload,
       minTime: DEFAULT_TIMELINE_CONFIG.minDuration,
@@ -47,26 +49,19 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
       durationTime: newDurationTime,
     });
 
+    if (
+      newPlayheadTime === state.playheadTime &&
+      newDurationTime === state.durationTime
+    )
+      return state;
+
     return {
       ...state,
       durationTime: newDurationTime,
       playheadTime: newPlayheadTime,
-      stateDep: getNewStateDep(),
+      timeStateDep: getNewStateDep(),
     };
   }
 
-  if (action.type === 'SET_HORIZONTAL_OFFSET') {
-    return {
-      ...state,
-      horizontalOffset: action.payload,
-    };
-  }
-
-  if (action.type === 'SET_VERTICAL_OFFSET') {
-    return {
-      ...state,
-      verticalOffset: action.payload,
-    };
-  }
   throw new Error(`Invalid action format ${action}`);
 };

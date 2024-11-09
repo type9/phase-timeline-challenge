@@ -6,7 +6,7 @@ export type TimelineState = {
   minTime: number;
   maxTime: number;
   durationTime: number;
-  stateDep: number;
+  timeStateDep: number;
   horizontalOffset: number;
   verticalOffset: number;
 };

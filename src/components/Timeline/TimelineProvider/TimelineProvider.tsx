@@ -11,7 +11,7 @@ export const TIMELINE_DEFAULT_STATE: TimelineState = {
   minTime: 0,
   maxTime: 0,
   durationTime: 2000,
-  stateDep: 0,
+  timeStateDep: 0,
   horizontalOffset: 0,
   verticalOffset: 0,
 };

@@ -1,113 +1,113 @@
 import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
-import { Playhead, PlayheadProps } from './Playhead';
+import { Playhead, PlayheadHandle } from './Playhead';
 import { Ruler, RulerProps } from './Ruler';
 import { TrackList, TrackListProps } from './TrackList';
 import { KeyframeList, KeyframeListProps } from './KeyframeList';
 import { PlayControls, PlayControlsProps } from './PlayControls';
 import { TimelineContext } from './TimelineProvider';
 import { DEFAULT_TIMELINE_CONFIG } from './constants';
-import { calculatePlayheadPosition } from './utils/position';
+import { useAnimationFrame } from './hooks/useAnimationFrame';
 
 export const Timeline = () => {
   const rulerContainerRef = useRef<RulerProps['containerRef']['current']>(null);
+  const rulerRef = useRef<RulerProps['rulerRef']['current']>(null);
   const trackListContainerRef =
     useRef<TrackListProps['containerRef']['current']>(null);
   const keyframeListContainerRef =
     useRef<KeyframeListProps['containerRef']['current']>(null);
-  const playheadRef = useRef<PlayheadProps['playheadRef']['current']>(null);
+  const playheadHandle = useRef<PlayheadHandle>(null);
 
-  const timelineContext = useContext(TimelineContext);
-  if (!timelineContext) {
+  //uses animation frames for intensive scroll/drag syncing
+  const { scheduleAnimationFrame } = useAnimationFrame();
+
+  const timelineContext = useContext(TimelineContext); //represents some state manage utility
+  if (!timelineContext)
     throw new Error('Timeline must be used within a TimelineProvider');
-  }
+
   const { timelineState, timelineDispatch } = timelineContext;
 
+  //left in intentionally for the sake of testing. keep in mind renders happen 2x in strict mode
+  console.count('TIMELINE RERENDER');
+
+  const updatePlayhead = useCallback(() => {
+    playheadHandle?.current?.updatePlayheadPosition(
+      timelineState.playheadTime,
+      timelineState.durationTime,
+      rulerRef,
+      rulerContainerRef
+    );
+  }, [
+    timelineState.playheadTime,
+    timelineState.durationTime,
+    playheadHandle?.current?.updatePlayheadPosition,
+    rulerRef,
+  ]);
+
+  //updates playhead position when timeline state changes
+  useEffect(
+    () => updatePlayhead(),
+    [timelineState.playheadTime, timelineState.durationTime, updatePlayhead]
+  );
+
   //#region SCROLL HANDLERS
-  const handleHorizontalScroll = useCallback(
-    (e: Event) => {
-      const target = e.currentTarget as HTMLDivElement;
-      if (target) {
-        timelineDispatch({
-          type: 'SET_HORIZONTAL_OFFSET',
-          payload: target.scrollLeft,
-        });
-      }
-    },
-    [timelineDispatch]
+  //for the sake of performance we sync referentially
+  const horizontalScrollDivs = useMemo(
+    () => [rulerContainerRef, keyframeListContainerRef],
+    [rulerContainerRef, keyframeListContainerRef]
+  );
+  const verticalScrollDivs = useMemo(
+    () => [trackListContainerRef, keyframeListContainerRef],
+    [trackListContainerRef, keyframeListContainerRef]
   );
 
-  const handleVerticalScroll = useCallback(
-    (e: Event) => {
-      const target = e.currentTarget as HTMLDivElement;
-      if (target) {
-        timelineDispatch({
-          type: 'SET_VERTICAL_OFFSET',
-          payload: target.scrollTop,
-        });
-      }
-    },
-    [timelineDispatch]
+  const handleScroll = useCallback(
+    (e: Event) =>
+      scheduleAnimationFrame(() => {
+        //Not sure why HTMLElement is not normally the target type. When I printed the event object I could tell the data was being passed.
+        // If this causes browser compatability issues, we can pass in the target ref as an arg.
+        const eventTarget = e?.target as HTMLDivElement | null;
+        if (!eventTarget) return;
+
+        //only syncs horizontal scrolls when a target is a horizontal scroll div
+        if (horizontalScrollDivs.find(ref => ref.current === eventTarget)) {
+          horizontalScrollDivs.forEach(ref => {
+            if (ref.current && ref.current !== eventTarget)
+              ref.current.scrollLeft = eventTarget.scrollLeft;
+          });
+          updatePlayhead();
+        }
+
+        //only syncs vertical scrolls when a target is a vertical scroll div
+        if (verticalScrollDivs.find(ref => ref.current === eventTarget))
+          verticalScrollDivs.forEach(ref => {
+            if (ref.current && ref.current !== eventTarget)
+              ref.current.scrollTop = eventTarget.scrollTop;
+          });
+      }),
+    [
+      horizontalScrollDivs,
+      verticalScrollDivs,
+      scheduleAnimationFrame,
+      updatePlayhead,
+    ]
   );
 
+  // Establishes listeners
+  // OPTIMIZE: Can be extracted into a automatic handlesyncing hook. Seems a little extra for now.
   useEffect(() => {
-    if (rulerContainerRef.current)
-      rulerContainerRef.current.addEventListener('scroll', e =>
-        handleHorizontalScroll(e)
+    [...horizontalScrollDivs, ...verticalScrollDivs].forEach(ref =>
+      ref?.current?.addEventListener('scroll', e => handleScroll(e))
+    );
+    return () =>
+      [...horizontalScrollDivs, ...verticalScrollDivs].forEach(ref =>
+        ref?.current?.removeEventListener('scroll', e => handleScroll(e))
       );
-    if (keyframeListContainerRef.current)
-      keyframeListContainerRef.current.addEventListener('scroll', e =>
-        handleHorizontalScroll(e)
-      );
-    if (keyframeListContainerRef.current)
-      keyframeListContainerRef.current.addEventListener('scroll', e =>
-        handleVerticalScroll(e)
-      );
-    if (trackListContainerRef.current)
-      trackListContainerRef.current.addEventListener('scroll', e =>
-        handleVerticalScroll(e)
-      );
-
-    return () => {
-      if (rulerContainerRef.current)
-        rulerContainerRef.current.removeEventListener('scroll', e =>
-          handleHorizontalScroll(e)
-        );
-      if (keyframeListContainerRef.current) {
-        keyframeListContainerRef.current.removeEventListener('scroll', e =>
-          handleHorizontalScroll(e)
-        );
-        keyframeListContainerRef.current.removeEventListener('scroll', e =>
-          handleVerticalScroll(e)
-        );
-      }
-      if (trackListContainerRef.current)
-        trackListContainerRef.current.removeEventListener('scroll', e =>
-          handleVerticalScroll(e)
-        );
-    };
-  }, []);
-
-  useEffect(() => {
-    if (rulerContainerRef.current) {
-      rulerContainerRef.current.scrollLeft = timelineState.horizontalOffset;
-    }
-    if (keyframeListContainerRef.current) {
-      keyframeListContainerRef.current.scrollLeft =
-        timelineState.horizontalOffset;
-    }
-  }, [timelineState.horizontalOffset]);
-
-  useEffect(() => {
-    if (trackListContainerRef.current) {
-      trackListContainerRef.current.scrollTop = timelineState.verticalOffset;
-    }
-    if (keyframeListContainerRef.current) {
-      keyframeListContainerRef.current.scrollTop = timelineState.verticalOffset;
-    }
-  }, [timelineState.verticalOffset]);
+  }, [handleScroll, horizontalScrollDivs, verticalScrollDivs]);
   //#endregion
 
   //#region INPUT HANDLERS
+  // Importantly, these handlers are the only way which state is updated. This allows for state functions to be transparent and top level.
+  // I've opted to inidividually define the handlers for each input, rather than combine similar handlers in preparation for possible upgrades
   const handleCurrentTimeInputChange = useCallback<
     NonNullable<PlayControlsProps['onCurrentTimeInputChange']>
   >(
@@ -138,7 +138,7 @@ export const Timeline = () => {
           payload: Number(e.target.value),
         });
 
-      //if no key is pressed, update the playhead time. in particular, this detects increment buttons.
+      //if no key is pressed, update the duration time. in particular, this detects increment buttons.
       if (currentKeyDown === undefined)
         timelineDispatch({
           type: 'SET_DURATION_TIME',
@@ -175,36 +175,28 @@ export const Timeline = () => {
     },
     [timelineDispatch]
   );
+  //#endregion
 
   const handleRulerUpdateTime = useCallback<
     NonNullable<RulerProps['onBarDrag']>
   >(
-    (_, time) => {
-      if (time === undefined) return;
-      timelineDispatch({
-        type: 'SET_PLAYHEAD_TIME',
-        payload: time,
-      });
-    },
+    (_, time) =>
+      scheduleAnimationFrame(() => {
+        //schedules animation frame to prevent lag when drag
+        if (time === undefined) return;
+        timelineDispatch({
+          type: 'SET_PLAYHEAD_TIME',
+          payload: time,
+        });
+      }),
     [timelineDispatch]
   );
-  //#endregion
 
   const segmentWidth = useMemo(
     () => `${timelineState.durationTime.toString()}px`,
     [timelineState.durationTime]
   );
 
-  const playheadPosition = useMemo(
-    () =>
-      calculatePlayheadPosition({
-        currentTime: timelineState.playheadTime,
-        leftOffset: timelineState.horizontalOffset,
-        leftPadding: DEFAULT_TIMELINE_CONFIG.leftRulerPadding,
-        timeToPixelRatio: DEFAULT_TIMELINE_CONFIG.timeToPixelRatio,
-      }),
-    [timelineState.horizontalOffset, timelineState.playheadTime]
-  );
   return (
     <div
       className="relative h-[300px] w-full grid grid-cols-[300px_1fr] grid-rows-[40px_1fr] 
@@ -215,7 +207,7 @@ export const Timeline = () => {
         increment={DEFAULT_TIMELINE_CONFIG.increment}
         playheadTime={timelineState.playheadTime}
         durationTime={timelineState.durationTime}
-        stateDep={timelineState.stateDep}
+        stateDep={timelineState.timeStateDep}
         onCurrentTimeInputChange={handleCurrentTimeInputChange}
         onCurrentTimeBlur={handleCurrentTimeInputBlur}
         onDurationTimeInputChange={handleDurationTimeInputChange}
@@ -223,6 +215,7 @@ export const Timeline = () => {
       />
       <Ruler
         containerRef={rulerContainerRef}
+        rulerRef={rulerRef}
         width={segmentWidth}
         onBarDrag={handleRulerUpdateTime}
         onBarClick={handleRulerUpdateTime}
@@ -232,15 +225,7 @@ export const Timeline = () => {
         containerRef={keyframeListContainerRef}
         segmentWidth={segmentWidth}
       />
-      <Playhead
-        positionX={playheadPosition}
-        playheadRef={playheadRef}
-        visible={
-          playheadPosition >
-          DEFAULT_TIMELINE_CONFIG.leftRulerPadding -
-            DEFAULT_TIMELINE_CONFIG.rightRulerPadding //accounts for the padding not being visible
-        }
-      />
+      <Playhead ref={playheadHandle} />
     </div>
   );
 };
