@@ -29,7 +29,7 @@ export type PlayControlsProps = {
 /*
  * PlayControls is a mostly dumb component that links state logic to input elements, and handles local behaviour such as selecting, clicking, and blur logic.
  * TO OPTIMIZE: Input elements can be extracted into their own component and the handles can be forwaded by PlayControls.
- *              This would prevent the container and other input elements from having to rerender on state change. Because this is shallow currently, is most likely not important.
+ *              This would prevent the container and other input elements from having to rerender on state change.
  */
 export const PlayControls = ({
   playheadTime,

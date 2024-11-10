@@ -6,7 +6,7 @@ export type TimelineState = {
   minTime: number;
   maxTime: number;
   durationTime: number;
-  timeStateDep: number;
+  timeStateDep: number; // used to force a rerender when time values are changed. in particular, this informs that the state object has been recreated.
   horizontalOffset: number;
   verticalOffset: number;
 };

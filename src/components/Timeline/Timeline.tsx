@@ -49,8 +49,13 @@ export const Timeline = () => {
     [timelineState.playheadTime, timelineState.durationTime, updatePlayhead]
   );
 
-  //#region SCROLL HANDLERS
-  //for the sake of performance we sync referentially
+  /* #region SCROLL HANDLERS - for the sake of performance we sync referentially
+   *
+   * I Noticed that even in the demo provided horizontal scroll still has a small lag on the other div. Reading documentation would lead you to believe that animationFrames would sync perfectly.
+   * According to https://stackoverflow.com/questions/41740082/scroll-events-requestanimationframe-vs-requestidlecallback-vs-passive-event-lis
+   * The scroll event occurs after a browser has rendered a scroll action. So by definition, we cannot perfectly sync the scrolls since the event does not fire until one frame later.
+   * My guess only way to perfectly sync would be to capture all possible ways a scroll is triggered and block the main thread to resolve the render.
+   */
   const horizontalScrollDivs = useMemo(
     () => [rulerContainerRef, keyframeListContainerRef],
     [rulerContainerRef, keyframeListContainerRef]
