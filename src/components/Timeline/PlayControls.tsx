@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { DEFAULT_TIMELINE_CONFIG } from './constants';
 import { setInputValue } from './utils/inputs';
+import { useAnimationFrame } from './hooks/useAnimationFrame';
 
 export type PlayControlsProps = {
   playheadTime: number;
@@ -33,16 +34,17 @@ export type PlayControlsProps = {
 export const PlayControls = ({
   playheadTime,
   durationTime,
+  stateDep,
   onCurrentTimeInputChange,
   onCurrentTimeBlur,
   onDurationTimeInputChange,
   onDurationTimeBlur,
   increment,
-  stateDep,
 }: PlayControlsProps) => {
   const currentTimeInputRef = React.useRef<HTMLInputElement>(null);
   const durationTimeInputRef = React.useRef<HTMLInputElement>(null);
   const currentKeyDownRef = React.useRef<React.KeyboardEvent['key']>();
+  const { scheduleAnimationFrame } = useAnimationFrame();
 
   //syncs internal state with global state
   useEffect(() => {
@@ -61,10 +63,7 @@ export const PlayControls = ({
       if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget?.blur();
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown')
         // if no key was used to make the change, select the input via target, i.e. the input element
-        setTimeout(() => {
-          //delays selection till after value mutates
-          inputRef.current?.select();
-        }, 0);
+        scheduleAnimationFrame(() => inputRef.current?.select()); //animation frame is nessecary to buffer the select of a changing element. alternative is to use setTimeout
     },
     []
   );
@@ -78,10 +77,7 @@ export const PlayControls = ({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (currentKeyDownRef.current === undefined)
         // if no key was used to make the change, select the input via target, i.e. the input element
-        setTimeout(() => {
-          //delays selection till after value mutates
-          e.target?.select();
-        }, 0);
+        scheduleAnimationFrame(() => e.target?.select()); //animation frame is nessecary to buffer the select of a changing element. alternative is to use setTimeout
     },
     []
   );
