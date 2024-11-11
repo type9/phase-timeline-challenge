@@ -3,7 +3,7 @@ import { Playhead, PlayheadHandle } from './Playhead';
 import { Ruler, RulerProps } from './Ruler';
 import { TrackList, TrackListProps } from './TrackList';
 import { KeyframeList, KeyframeListProps } from './KeyframeList';
-import { PlayControls, PlayControlsProps } from './PlayControls';
+import { PlayControls } from './PlayControls';
 import { TimelineContext } from './TimelineProvider';
 import { DEFAULT_TIMELINE_CONFIG } from './constants';
 import { useAnimationFrame } from './hooks/useAnimationFrame';
@@ -41,6 +41,7 @@ export const Timeline = () => {
     timelineState.durationTime,
     playheadHandle?.current?.updatePlayheadPosition,
     rulerRef,
+    rulerContainerRef,
   ]);
 
   //updates playhead position when timeline state changes
@@ -107,78 +108,6 @@ export const Timeline = () => {
   }, [handleScroll, horizontalScrollDivs, verticalScrollDivs]);
   //#endregion
 
-  //#region INPUT HANDLERS
-  // Importantly, these handlers are the only way which state is updated. This allows for state functions to be transparent and top level.
-  // I've opted to inidividually define the handlers for each input, rather than combine similar handlers in preparation for possible upgrades
-  const handleCurrentTimeInputChange = useCallback<
-    NonNullable<PlayControlsProps['onCurrentTimeInputChange']>
-  >(
-    (e, currentKeyDown) => {
-      if (currentKeyDown === 'ArrowUp' || currentKeyDown === 'ArrowDown')
-        timelineDispatch({
-          type: 'SET_PLAYHEAD_TIME',
-          payload: Number(e.target.value),
-        });
-
-      //if no key is pressed, update the playhead time. in particular, this detects increment buttons.
-      if (currentKeyDown === undefined)
-        timelineDispatch({
-          type: 'SET_PLAYHEAD_TIME',
-          payload: Number(e.target.value),
-        });
-    },
-    [timelineDispatch]
-  );
-
-  const handleDurationTimeInputChange = useCallback<
-    NonNullable<PlayControlsProps['onDurationTimeInputChange']>
-  >(
-    (e, currentKeyDown) => {
-      if (currentKeyDown === 'ArrowUp' || currentKeyDown === 'ArrowDown')
-        timelineDispatch({
-          type: 'SET_DURATION_TIME',
-          payload: Number(e.target.value),
-        });
-
-      //if no key is pressed, update the duration time. in particular, this detects increment buttons.
-      if (currentKeyDown === undefined)
-        timelineDispatch({
-          type: 'SET_DURATION_TIME',
-          payload: Number(e.target.value),
-        });
-    },
-    [timelineDispatch]
-  );
-
-  const handleCurrentTimeInputBlur = useCallback<
-    NonNullable<PlayControlsProps['onCurrentTimeBlur']>
-  >(
-    (e, currentKeyDown) => {
-      // on escape we do not dispatch a new state
-      if (currentKeyDown === 'Escape') return;
-      timelineDispatch({
-        type: 'SET_PLAYHEAD_TIME',
-        payload: Number(e.target.value),
-      });
-    },
-    [timelineDispatch]
-  );
-
-  const handleDurationTimeInputBlur = useCallback<
-    NonNullable<PlayControlsProps['onCurrentTimeBlur']>
-  >(
-    (e, currentKeyDown) => {
-      // on escape we do not dispatch a new state
-      if (currentKeyDown === 'Escape') return;
-      timelineDispatch({
-        type: 'SET_DURATION_TIME',
-        payload: Number(e.target.value),
-      });
-    },
-    [timelineDispatch]
-  );
-  //#endregion
-
   const handleRulerUpdateTime = useCallback<
     NonNullable<RulerProps['onBarDrag']>
   >(
@@ -205,16 +134,46 @@ export const Timeline = () => {
     bg-gray-800 border-t-2 border-solid border-gray-700"
       data-testid="timeline"
     >
-      <PlayControls
-        increment={DEFAULT_TIMELINE_CONFIG.increment}
-        playheadTime={timelineState.playheadTime}
-        durationTime={timelineState.durationTime}
-        stateDep={timelineState.timeStateDep}
-        onCurrentTimeInputChange={handleCurrentTimeInputChange}
-        onCurrentTimeBlur={handleCurrentTimeInputBlur}
-        onDurationTimeInputChange={handleDurationTimeInputChange}
-        onDurationTimeBlur={handleDurationTimeInputBlur}
-      />
+      <PlayControls>
+        <PlayControls.CurrentTimeInput
+          data-testid="current-time-input"
+          value={timelineState.playheadTime.toString()}
+          onChange={e =>
+            timelineDispatch({
+              type: 'SET_PLAYHEAD_TIME',
+              payload: Number(e.target.value),
+            })
+          }
+          onBlur={e =>
+            timelineDispatch({
+              type: 'SET_PLAYHEAD_TIME',
+              payload: Number(e.target.value),
+            })
+          }
+          step={DEFAULT_TIMELINE_CONFIG.increment}
+          min={0}
+          max={timelineState.durationTime}
+        />
+        <PlayControls.DurationTimeInput
+          data-testid="duration-input"
+          value={timelineState.durationTime.toString()}
+          onChange={e =>
+            timelineDispatch({
+              type: 'SET_DURATION_TIME',
+              payload: Number(e.target.value),
+            })
+          }
+          onBlur={e =>
+            timelineDispatch({
+              type: 'SET_DURATION_TIME',
+              payload: Number(e.target.value),
+            })
+          }
+          step={DEFAULT_TIMELINE_CONFIG.increment}
+          min={DEFAULT_TIMELINE_CONFIG.minDuration}
+          max={DEFAULT_TIMELINE_CONFIG.maxDuration}
+        />
+      </PlayControls>
       <Ruler
         containerRef={rulerContainerRef}
         rulerRef={rulerRef}

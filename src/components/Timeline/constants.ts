@@ -7,3 +7,5 @@ export const DEFAULT_TIMELINE_CONFIG = {
   leftRulerPadding: 316,
   rightRulerPadding: 16,
 };
+
+export type KeyTypes = 'ArrowUp' | 'ArrowDown' | 'Escape' | 'Enter';

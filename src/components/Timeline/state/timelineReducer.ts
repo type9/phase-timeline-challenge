@@ -3,8 +3,6 @@ import { TimelineState } from '../models/TimelineProvider';
 import { getNewDurationTime, getNewPlayheadTime } from '../utils/time';
 import { DEFAULT_TIMELINE_CONFIG } from '../constants';
 
-const getNewStateDep = () => performance.now();
-
 export type TimelineAction =
   | { type: 'SET_DURATION_TIME'; payload: number }
   | {
@@ -33,7 +31,6 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
     return {
       ...state,
       playheadTime: newPlayheadTime,
-      timeStateDep: getNewStateDep(),
     };
   }
 
@@ -61,7 +58,6 @@ export const timelineReducer: Reducer<TimelineState, TimelineAction> = (
       ...state,
       durationTime: newDurationTime,
       playheadTime: newPlayheadTime,
-      timeStateDep: getNewStateDep(),
     };
   }
 
