@@ -1,27 +1,24 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { useAnimationFrame } from './hooks/useAnimationFrame';
 import { KeyTypes } from './constants';
 
 export type NumberInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
-  revertPendingChangeKeycodes?: KeyTypes[];
+  revertPendingChangeKeyCodes?: KeyTypes[];
   triggerBlurKeyCodes?: KeyTypes[];
   selectTextOnChange?: boolean;
   selectTextOnFocus?: boolean;
 };
 
 export const NumberInput = ({
-  revertPendingChangeKeycodes = ['Escape'],
+  revertPendingChangeKeyCodes = ['Escape'],
   triggerBlurKeyCodes = ['Escape', 'Enter'],
   selectTextOnChange = true,
   selectTextOnFocus = true,
   onChange,
-  onBlur,
   value,
   ...props
 }: NumberInputProps) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const previousValueRef = useRef(value);
-  const { scheduleAnimationFrame } = useAnimationFrame();
 
   useEffect(() => {
     const inputElement = inputRef.current;
@@ -43,15 +40,15 @@ export const NumberInput = ({
       inputRef.current.value = String(previousValueRef.current);
   }, [inputRef, value]);
 
-  const selectValue = useCallback(
-    //animation frame is nessecary to buffer the select of a changing element. alternative is to use setTimeout
-    () => scheduleAnimationFrame(() => inputRef.current?.select()),
-    [scheduleAnimationFrame, inputRef]
-  );
+  const selectValue = useCallback(() => {
+    //ensures input is focused before selecting
+    if (inputRef.current && document.activeElement === inputRef.current)
+      inputRef.current.select();
+  }, [inputRef]);
 
   const handleKeyUp = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (revertPendingChangeKeycodes.find(key => key === e.key)) revertValue();
+      if (revertPendingChangeKeyCodes.find(key => key === e.key)) revertValue();
       if (triggerBlurKeyCodes.find(key => key === e.key))
         inputRef.current?.blur();
     },
@@ -60,8 +57,8 @@ export const NumberInput = ({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange?.(e);
       if (selectTextOnChange) selectValue();
+      onChange?.(e);
     },
     [selectValue, onChange]
   );
@@ -73,13 +70,6 @@ export const NumberInput = ({
     },
     [selectValue]
   );
-
-  const handleBlur = useCallback(
-    (e: React.FocusEvent<HTMLInputElement>) =>
-      scheduleAnimationFrame(() => onBlur?.(e)), //needed to properly deselect on blur. otherwise change can happen after blur fires causing a reselect.
-    []
-  );
-
   return (
     <input
       ref={inputRef}
@@ -87,7 +77,6 @@ export const NumberInput = ({
       onFocus={handleFocus}
       onChange={handleChange}
       onKeyUp={handleKeyUp}
-      onBlur={handleBlur}
       {...props}
     />
   );
