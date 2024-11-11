@@ -137,7 +137,7 @@ export const Timeline = () => {
       <PlayControls>
         <PlayControls.CurrentTimeInput
           data-testid="current-time-input"
-          value={timelineState.playheadTime.toString()}
+          value={timelineState.playheadTime.toString()} //impliclty removes leading 0s and forces update when state changes
           onChange={e =>
             timelineDispatch({
               type: 'SET_PLAYHEAD_TIME',
@@ -156,7 +156,7 @@ export const Timeline = () => {
         />
         <PlayControls.DurationTimeInput
           data-testid="duration-input"
-          value={timelineState.durationTime.toString()}
+          value={timelineState.durationTime.toString()} //impliclty removes leading 0s and forces update when state changes
           onChange={e =>
             timelineDispatch({
               type: 'SET_DURATION_TIME',

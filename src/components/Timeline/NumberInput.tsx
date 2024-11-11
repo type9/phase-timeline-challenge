@@ -4,6 +4,7 @@ import { KeyTypes } from './constants';
 export type NumberInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
   revertPendingChangeKeyCodes?: KeyTypes[];
   triggerBlurKeyCodes?: KeyTypes[];
+  revertNonNumerics?: boolean;
   selectTextOnChange?: boolean;
   selectTextOnFocus?: boolean;
 };
@@ -11,6 +12,7 @@ export type NumberInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 export const NumberInput = ({
   revertPendingChangeKeyCodes = ['Escape'],
   triggerBlurKeyCodes = ['Escape', 'Enter'],
+  revertNonNumerics = true,
   selectTextOnChange = true,
   selectTextOnFocus = true,
   onChange,
@@ -57,8 +59,10 @@ export const NumberInput = ({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (selectTextOnChange) selectValue();
+      //naive implementation of non-numeric input detection.
+      if (revertNonNumerics && isNaN(parseFloat(e.target.value))) revertValue();
       onChange?.(e);
+      if (selectTextOnChange) selectValue();
     },
     [selectValue, onChange]
   );
