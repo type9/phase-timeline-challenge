@@ -44,10 +44,7 @@ export const Timeline = () => {
   ]);
 
   //updates playhead position when timeline state changes
-  useEffect(
-    () => updatePlayhead(),
-    [timelineState.playheadTime, timelineState.durationTime, updatePlayhead]
-  );
+  useEffect(() => updatePlayhead(), [updatePlayhead]);
 
   /* #region SCROLL HANDLERS - for the sake of performance we sync referentially
    *
