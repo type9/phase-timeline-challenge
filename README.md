@@ -1,5 +1,27 @@
 # Phase Timeline Challenge
 
+## INSTALLATION AND RUN TESTS
+
+1. Install packages (Playwright was added)
+
+```bash
+yarn install
+```
+
+2. Run tests
+
+Make sure it starts on localhost:3000
+
+```bash
+npm start
+```
+
+In another terminal, run playwright tests and click top-level play button
+
+```bash
+npx playwright test --ui
+```
+
 ## Overview
 
 Implement interactive features for a Timeline component. We will provide a basic Timeline component scaffold, and your task is to implement the functionality that meets the user behavior requirements outlined below.
@@ -102,7 +124,6 @@ https://github.com/user-attachments/assets/3940cd0d-dd9d-4331-9172-592462ad65d3
 ## Important Notes
 
 ⚠️ **Warning**: Do not change any `data-testid` attribute names in the provided components. These are used for automated assessment of your assignment. Modifying these names may result in failing the assessment criteria.
-
 
 ## Submission
 
