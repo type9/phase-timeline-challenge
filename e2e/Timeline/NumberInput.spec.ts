@@ -113,6 +113,57 @@ test.describe('Timeline - NumberInput Component Behavior', () => {
     expect(selectionLength).not.toBe(0);
   });
 
+  test('NumberInput arrows and spin-buttons should not revert value on escape as change is immediate', async ({
+    page,
+  }) => {
+    const { durationTimeLocator } = elements;
+
+    // Set duration time to 200
+    await durationTimeLocator.click();
+    await durationTimeLocator.fill('200');
+    await durationTimeLocator.press('Enter');
+
+    // Click outside to trigger blur
+    await durationTimeLocator.press('Escape');
+
+    // Value should be confirmed
+    await expect(durationTimeLocator).toHaveValue('200');
+
+    // Click duration time and try to change with arrow
+    await durationTimeLocator.click();
+    await durationTimeLocator.press('ArrowUp');
+    await durationTimeLocator.press('ArrowUp');
+    await durationTimeLocator.press('Escape');
+
+    // Value should not be reverted
+    await expect(durationTimeLocator).toHaveValue('220');
+
+    // Get the bounding box of the input element
+    const boundingBox = await durationTimeLocator.boundingBox();
+    if (!boundingBox) {
+      throw new Error('Could not get bounding box of durationTimeLocator');
+    }
+
+    const { x, y, width, height } = boundingBox;
+
+    // Calculate positions for increment and decrement buttons
+    // Adjust these calculations based on the actual rendering in your application
+    const incrementButtonX = x + width - 5; // Near the right edge
+    const incrementButtonY = y + height / 4; // Upper half for increment
+    const decrementButtonX = incrementButtonX;
+    const decrementButtonY = y + (3 * height) / 4; // Lower half for decrement
+
+    // Click the increment button twice
+    await page.mouse.click(incrementButtonX, incrementButtonY);
+    await page.mouse.click(incrementButtonX, incrementButtonY);
+
+    // Hit escape
+    await durationTimeLocator.press('Escape');
+
+    // Should not have reverted change
+    await expect(durationTimeLocator).toHaveValue('240');
+  });
+
   test('NumberInput should respect min and max constraints', async () => {
     const { durationTimeLocator } = elements;
 
