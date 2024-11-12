@@ -61,6 +61,7 @@ export const NumberInput = ({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       //naive implementation of non-numeric input detection.
       if (revertNonNumerics && isNaN(parseFloat(e.target.value))) revertValue();
+      previousValueRef.current = e.target.value;
       onChange?.(e);
       if (selectTextOnChange) selectValue();
     },
